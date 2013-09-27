@@ -8,7 +8,6 @@
 
 #include "crypt_blowfish.h"
 #include "password.h"
-#include "config.h"
 
 int msgno = 0;
 
