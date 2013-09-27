@@ -117,14 +117,22 @@ test_args_salt_binary()
 {
     char *salt = NULL, *hash = NULL;
     int fd, n;
-    size_t bytes = 0;
+    size_t len, bytes = 0;
 
-    salt = malloc(BCRYPT_BLOWFISH_SALT_REQUIRED_LEN + 1);
-    memset(salt, 0, BCRYPT_BLOWFISH_SALT_REQUIRED_LEN + 1);
+    len = BCRYPT_BLOWFISH_SALT_REQUIRED_LEN;
+
+    salt = malloc(len + 1);
+    memset(salt, 0, len + 1);
 
     fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
-        read(fd, salt, BCRYPT_BLOWFISH_SALT_REQUIRED_LEN);
+        while (bytes < len) {
+            n = read(fd, salt + bytes, len - bytes);
+            if (n < 0) {
+                break;
+            }
+            bytes += (size_t)n;
+        }
         close(fd);
     }
 

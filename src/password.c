@@ -5,6 +5,7 @@
 #include <libgen.h>
 #include <limits.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "crypt_blowfish.h"
 #include "password.h"
@@ -84,8 +85,9 @@ static char *
 make_salt(size_t len)
 {
     char *buffer;
+    int ret, fd, n;
     size_t i, length;
-    int ret;
+    size_t bytes = 0;
 
     if (len > (INT_MAX / 3)) {
         msg_error(hash, "length is too large to safely generate\n");
@@ -101,10 +103,23 @@ make_salt(size_t len)
 
     length = len * 3 / 4 + 1;
 
-    srand((unsigned)time(NULL));
+    fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+        while (bytes < length) {
+            n = read(fd, buffer + bytes, length - bytes);
+            if (n < 0) {
+                break;
+            }
+            bytes += (size_t)n;
+        }
+        close(fd);
+    }
 
-    for (i = 0; i < length; i++) {
-        buffer[i] ^= (char)(255.0 * rand() / RAND_MAX);
+    if (bytes < length) {
+        srand((unsigned)time(NULL));
+        for (i = 0; i < length; i++) {
+            buffer[i] ^= (char)(255.0 * rand() / RAND_MAX);
+        }
     }
 
     ret = to_base64(buffer, length, len);
