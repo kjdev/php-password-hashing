@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <limits.h>
 #include <time.h>
+#include <ctype.h>
 #include <fcntl.h>
 
 #include "crypt_blowfish.h"
@@ -38,7 +40,7 @@ to_base64(char *str, size_t str_len, const size_t out_len)
     size_t i;
     int n = 0, x = 0, l = 0;
 
-    buffer = (char *)malloc((str_len * 4 / 3 + 3) & ~0x03 + 1);
+    buffer = (char *)malloc(((str_len * 4 / 3 + 3) & ~0x03) + 1);
     if (!buffer) {
         msg_error(hash, "memory allocate\n");
         return -1;
@@ -139,8 +141,6 @@ password_hash(const char *password, const char *algo,
 {
     char *gensalt = NULL, *hash = NULL, *output = NULL;
     char format[FORMAT_LEN];
-    int status = 0;
-    size_t i, len;
     size_t output_len = BLOWFISH_LEN + 1;
     size_t salt_required_len = BCRYPT_BLOWFISH_SALT_REQUIRED_LEN;
     size_t format_len, salt_len;
@@ -167,7 +167,7 @@ password_hash(const char *password, const char *algo,
 
         if (salt_len < salt_required_len) {
             free(gensalt);
-            msg_verbose(hash, "provided salt is too short: %d expecting %d\n",
+            msg_verbose(hash, "provided salt is too short: %ld expecting %ld\n",
                         salt_len, salt_required_len);
             return NULL;
         } else if (is_alphabet(gensalt, salt_len) < 0) {
